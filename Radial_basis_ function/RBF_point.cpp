@@ -23,7 +23,7 @@ Matrix<double> Weight(M,1);       //权值矩阵
  
 /*Hermit多项式函数*/
 inline double Hermit(double x, double x2){
-    return 1.1*(1-x+2*x*x)*exp(-1*x*x/2) + 0.8*(1-x2+2*x2*x2)*exp(-1*x2*x2/2);
+    return 1.1*(1-x+2*x*x)*exp(-1*x*x/2) + 1.2*(1-x2+2*x2*x2)*exp(-1*x2*x2/2);
 }
  
 /*产生指定区间上均匀分布的随机数*/
@@ -43,6 +43,7 @@ inline double RandomNorm(double mu,double sigma,double floor,double ceil){
 }
  
 /*产生输入样本*/
+//需要重写，不准
 void generateSample(){
     for(int i=0;i<P;++i){
         double in=uniform(-4,4), in2 = uniform(-4,4); // 两个正态分布的坐标 -> 二维正态分布？ 可能不太对
@@ -157,7 +158,7 @@ int main(int argc,char *argv[]){　　
      
     //根据已训练好的神经网络作几组测试
     for(int x=-4;x<5;++x){
-        for (int y = 4; y >-5; --y)
+        for (int y = -4; y<5; ++y)
         {
             Point test_point(x,y);
             cout<<test_point<<"\t";
