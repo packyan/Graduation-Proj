@@ -49,7 +49,7 @@ void generateSample(){
         double in=uniform(-4,4), in2 = uniform(-4,4); // 两个正态分布的坐标 -> 二维正态分布？ 可能不太对
         Point temp(in,in2);
         X[i] = temp;
-        Y.put(i,0,Hermit(in, in2) + RandomNorm(0,0.1,-0.3,0.3));
+        Y.put(i,0,Hermit(in, in2) + RandomNorm(0,0.1,-0.2,0.2));
     }
 }
  
@@ -134,7 +134,7 @@ double getOutput(Point x){
     return y;
 }
  
-int main(int argc,char *argv[]){　　 
+int main(int argc,char *argv[]){
     srand(time(0));
     generateSample();       //产生输入和对应的期望输出样本
     KMeans();           //对输入进行聚类，产生聚类中心
@@ -142,7 +142,7 @@ int main(int argc,char *argv[]){　　
     {
         if(p1.mod2() >= p2.mod2()) return true;
         else return false;
-    });      //对聚类中心（一维数据）进行排序
+    });      //对聚类中心（point(x,y)转成模长一维数据）进行排序
      
     //根据聚类中心间的距离，计算各扩展常数
     delta[0]=center[1].Point_dst(center[0]);       

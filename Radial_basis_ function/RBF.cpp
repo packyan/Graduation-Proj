@@ -127,7 +127,7 @@ double getOutput(double x){
     return y;
 }
  
-int main(int argc,char *argv[]){　　 
+int main(int argc,char *argv[]){
     srand(time(0));
     generateSample();       //产生输入和对应的期望输出样本
     KMeans();           //对输入进行聚类，产生聚类中心
