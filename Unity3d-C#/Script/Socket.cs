@@ -17,14 +17,14 @@ public class Socket : MonoBehaviour
 {
 
     private Thread thStartServer;//定义启动socket的线程 
-
+    const int data_size =111*2;
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct face_fit_msg
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
         public byte[] packages_head;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 66*2)]
-        //test point 66
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = data_size)]
+        //test points
         public double[] face_fit_data;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
         public byte[] package_end;
@@ -63,25 +63,38 @@ public class Socket : MonoBehaviour
         TcpListener tlistener = new TcpListener(ip, 6666);
         tlistener.Start();
         Debug.Log("Socket服务器监听启动......");
-
-
+        byte[] buffer = new byte[bufferSize];//定义一个缓存buffer数组 
+        byte[] buffer_small = new byte[1024];
         do
         {
+            
             try  //直接关掉客户端，服务器端会抛出异常  
             {
                 TcpClient remoteClient = tlistener.AcceptTcpClient();//接收已连接的客户端,阻塞方法  
                 Debug.Log("客户端已连接！local:" + remoteClient.Client.LocalEndPoint + "<---Client:" + remoteClient.Client.RemoteEndPoint);
                 NetworkStream streamToClient = remoteClient.GetStream();//获得来自客户端的流  
-                                                                        //接收客户端发送的数据部分  
-                byte[] buffer = new byte[bufferSize];//定义一个缓存buffer数组  
-                int byteRead = streamToClient.Read(buffer, 0, bufferSize);//将数据搞入缓存中（有朋友说read()是阻塞方法，测试中未发现程序阻塞）  
+                 
+                int byteRead = streamToClient.Read(buffer, 0, bufferSize);//将数据搞入缓存中（有朋友说read()是阻塞方法，测试中未发现程序阻塞） 
+                int byteRead2 = streamToClient.Read(buffer_small, 0, 1024);
                 if (byteRead == 0)//连接断开，或者在TCPClient上调用了Close()方法，或者在流上调用了Dispose()方法。  
                 {
                     Debug.Log("客户端连接断开......");
                     break;
                 }
+                
+                //if( byteRead < 1781)
+                //{
+                //    //Debug.Log("package is still reciveing");
+                //    Debug.Log("byteRead: " + byteRead);
+                //    //Debug.Log("raw data: " + BitConverter.ToString(buffer));
+                //    continue;
+                //}
+                //接收客户端发送的数据部分    
+                Debug.Log("byteRead: " + byteRead + "byteRead2 " + byteRead2);
+                buffer_small.CopyTo(buffer, 1460);
+                //Debug.Log("raw data: " + BitConverter.ToString(buffer));
                 int package_size = Marshal.SizeOf(new face_fit_msg());
-                int package_num = byteRead / package_size;
+                int package_num = (byteRead+byteRead2) / package_size;
                 //Debug.Log("face_fit_msg size :" + package_num);
                 for(int i = 0; i < package_num; ++i) {
                     byte[] each_struct = new byte[package_size];
@@ -91,12 +104,14 @@ public class Socket : MonoBehaviour
                     face_fit.face_data_recv = Bytes2Struct<face_fit_msg>(each_struct);
                     //check each head and end
                     //if check successfully, then do next operation.
-                    //Debug.Log("package head : " + BitConverter.ToString(face_fit.face_data_recv.packages_head));
-                   //Debug.Log("face-fit data: " + face_fit.face_data_recv.face_fit_data[0] + ' '
-                   //     + face_fit.face_data_recv.face_fit_data[1] + ' '
-                   //     + face_fit.face_data_recv.face_fit_data[2] + ' '
-                   //     + face_fit.face_data_recv.face_fit_data[3] + ' ');
-                    //Debug.Log("package end : " + BitConverter.ToString(face_fit.face_data_recv.package_end));
+                    Debug.Log("package_size: " + package_size);
+                    Debug.Log("package head : " + BitConverter.ToString(face_fit.face_data_recv.packages_head));
+                    //Debug.Log("face-fit data: " + face_fit.face_data_recv.face_fit_data[0] + ' '
+                    //     + face_fit.face_data_recv.face_fit_data[1] + ' '
+                    //     + face_fit.face_data_recv.face_fit_data[data_size - 2] + ' '
+                    //     + face_fit.face_data_recv.face_fit_data[data_size - 1] + ' ');
+                    Debug.Log("package end : " + BitConverter.ToString(face_fit.face_data_recv.package_end));
+                    buffer = new byte[bufferSize];
                 }
                 
                 // string msg = Encoding.Unicode.GetString(buffer, 0, byteRead);//从二进制转换为字符串对应的客户端会有从字符串转换为二进制的方法 
