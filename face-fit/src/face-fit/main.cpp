@@ -39,7 +39,7 @@ using namespace FACETRACKER;
 #pragma pack(push, 1) // 取消内存大小自动对齐
 struct face_fit_msg{
 unsigned char packages_head[2] ={0xff, 0xfe};
-double face_fit_data[66*2];
+double face_fit_data[222];
 unsigned char package_end[3] = {0xbe,0xef,'\0'};
 };
 #pragma pack(pop)
@@ -321,18 +321,21 @@ run_video_mode(const Configuration &cfg,
       printf(" Frame number %d\r", frame_number);
       fflush(stdout);
     }
+
  //initialize socket
 
-	int	sockfd;
+  int  sockfd;
+  
   struct sockaddr_in servaddr;
+
   if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
     printf("create socket error: %s(errno: %d)\n", strerror(errno),errno);
     exit(0);
     }
-	 memset(&servaddr, 0, sizeof(servaddr));
+   memset(&servaddr, 0, sizeof(servaddr));
    servaddr.sin_family = AF_INET;
    servaddr.sin_port = htons(6666);
-	if( inet_pton(AF_INET, "192.168.177.111", &servaddr.sin_addr) <= 0){
+  if( inet_pton(AF_INET, "192.168.177.111", &servaddr.sin_addr) <= 0){
     printf("inet_pton error for server\n");
     exit(0);
     }
@@ -341,6 +344,12 @@ run_video_mode(const Configuration &cfg,
     printf("connect error: %s(errno: %d)\n",strerror(errno),errno);
     exit(0);
     }
+    // struct linger so_linger;
+    // so_linger.l_onoff = TRUE; 
+    // so_linger.l_linger = 1;
+    // if(setsockopt(sockfd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger))    
+    // perror("setsockopt(2)");
+	
 //
     cv::Mat_<uint8_t> gray_image;
     if (image.type() == cv::DataType<cv::Vec<uint8_t,3> >::type)
@@ -365,24 +374,72 @@ run_video_mode(const Configuration &cfg,
     }
 	//display point in terminal
 	//std::cout << "shape size:" << shape.size()<<std::endl;
-	for (size_t i = 0; i < shape.size(); i++)
+	//std::cout << shape[i].x << '\t' << shape[i].y << std::endl;
+  size_t face_nodes_cnt = 66;
+	for (size_t i = 0; i < shape.size(); ++i)
 		{
 			test_face_msg.face_fit_data[2*i] = shape[i].x;
 			test_face_msg.face_fit_data[2*i+1] = shape[i].y;
+    
 		}
+  // addtiems: total add nodes how many times
+  // index_pairs : the nodes' index to do linear interp
+  int index_pairs[] = {7,9,6,10,5,11,3,31,35,13,2,30,30,14,1,29,29,15,0,28,28,16};
+  size_t addNodes[] = {2,4,5,3,3,4,4,5,5,5,5}; // total 45 points
+  size_t index_start = shape.size(), index_end = index_start+addNodes[0];
+  for (int addtiems = 0; addtiems < 11; ++addtiems)
+  {
+    for (size_t i = index_start; i < index_end; ++i)
+    {
+      // std::cout << index_pairs[2*addtiems]*2 << ' ' << index_pairs[2*addtiems+1]*2 << ' '
+      // << index_pairs[2*addtiems]*2+ 1 << ' ' << index_pairs[2*addtiems+1]*2 + 1<< std::endl;;
+      double x = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2] 
+      + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2] 
+      - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2])
+      /(addNodes[addtiems]+1)*(i - index_start + 1);
+      double y = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2+ 1] 
+      + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2 + 1] 
+      - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2 + 1])
+      / (addNodes[addtiems]+1)*(i - index_start + 1);
 
-		//std::cout << shape[i].x << '\t' << shape[i].y << std::endl;
+      test_face_msg.face_fit_data[2*i] = x;
+      test_face_msg.face_fit_data[2*i+1] = y;
+    }
+    if(addtiems <= 10)
+      {
+        index_start = index_start+addNodes[addtiems];
+        index_end = index_end+addNodes[addtiems+1];
+      }
+  }
+
+// for(size_t i = 0 ; i < 222; i = i+2){
+//   std::cout << i<<':'<<' ' <<test_face_msg.face_fit_data[i] <<' '<< test_face_msg.face_fit_data[i+1]<< std::endl;
+// }
+  //   size_t add_nodes = 4;
+  // for (size_t i = face_nodes_cnt; i < face_nodes_cnt + add_nodes; ++i)
+  // {
+  //   //std::cout << i << '\t' << (2*i+1) << std::endl;
+  //   // double x = shape[6].x + (shape[10].x - shape[6].x)/ (add_nodes + 1 )*(i- face_nodes_cnt + 1);
+  //   // double y = shape[6].y + (shape[10].y - shape[6].y)/ (add_nodes + 1 )*(i- face_nodes_cnt + 1);
+  //   double x = test_face_msg.face_fit_data[12] + (test_face_msg.face_fit_data[20] - test_face_msg.face_fit_data[12])/
+  //     (add_nodes+1)*(i - face_nodes_cnt + 1);
+  //   double y = test_face_msg.face_fit_data[12 + 1] + (test_face_msg.face_fit_data[20 + 1] - test_face_msg.face_fit_data[12 + 1])/
+  //     (add_nodes+1)*(i - face_nodes_cnt + 1); 
+
+  //   //std::cout << x << '\t' << y << std::endl;
+  //   test_face_msg.face_fit_data[2*i] = x;
+  //   test_face_msg.face_fit_data[2*i+1] = y;
+  // }
 
 	//send face-fit result by socket
-		if(send(sockfd, (char *)&test_face_msg, sizeof(face_fit_msg), 0) < 0)
+
+      if(send(sockfd, (char *)&test_face_msg, sizeof(face_fit_msg), 0) < 0)
 		{
 			printf("send msg error: %s(errno: %d)\n", strerror(errno), errno);
 			
 			exit(0);
 		} 
 	//after send msg close socketfd
-	 close(sockfd);
-
     if (!have_argument_p(landmarks_argument)) {
       display_data(cfg, image, shape, pose);
     } else if (shape.size() > 0) {
@@ -398,7 +455,7 @@ run_video_mode(const Configuration &cfg,
     } else if (cfg.verbose) {
       display_data(cfg, image, shape, pose);
     }
-
+    close(sockfd);
     input >> image;
     frame_number++;
   }

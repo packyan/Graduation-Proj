@@ -3,6 +3,20 @@
 标签（空格分隔）： 毕业设计
 
 ---
+## Face-fit
+It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face and find the face feature points through a webcam, as the same time pack the face feature points data and transmit them to a Unity3D server.
+
+## Unity3D C\#
+### Socket
+#### Usage:
+1. `socket.cs` is used to communicata with the client, and receive Face-fit data form a linux client.
+2. `Initializeface` is used to initialize face nodes in Unity3D and drive these nodes to make face animation.
+
+### Logs:
+1. 2018.04.09 First test finished. Just simpely receive data from client, and drive some spheres.
+2. 2018.04.21 `face-fit` use linear interp to add additional face point, it's purely to increase the number of points. So the facial animation looks very hard. Optimize the server to receive separated data packets.
+
+
 ## 1. 目录
 
 ## 2. 项目简介
