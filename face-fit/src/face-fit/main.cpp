@@ -21,6 +21,8 @@
 #include "utils/command-line-arguments.hpp"
 #include "utils/points.hpp"
 #include "tracker/FaceTracker.hpp"
+#include "matrix.h"
+#include "rbf.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
@@ -315,7 +317,8 @@ run_video_mode(const Configuration &cfg,
 
   input >> image;
   int frame_number = 1;
-
+  bool run_onec = 0; 
+  double pre_frame_data[222] = {0.0};
   while ((image.rows > 0) && (image.cols > 0)) {
     if (cfg.verbose) {
       printf(" Frame number %d\r", frame_number);
@@ -323,7 +326,7 @@ run_video_mode(const Configuration &cfg,
     }
 
  //initialize socket
-
+ 
   int  sockfd;
   
   struct sockaddr_in servaddr;
@@ -382,35 +385,87 @@ run_video_mode(const Configuration &cfg,
 			test_face_msg.face_fit_data[2*i+1] = shape[i].y;
     
 		}
+
+  // intialiaze additional face points only run onec
   // addtiems: total add nodes how many times
   // index_pairs : the nodes' index to do linear interp
-  int index_pairs[] = {7,9,6,10,5,11,3,31,35,13,2,30,30,14,1,29,29,15,0,28,28,16};
-  size_t addNodes[] = {2,4,5,3,3,4,4,5,5,5,5}; // total 45 points
-  size_t index_start = shape.size(), index_end = index_start+addNodes[0];
-  for (int addtiems = 0; addtiems < 11; ++addtiems)
+  const int index_pairs[] = {7,9,6,10,5,11,3,31,35,13,2,30,30,14,1,29,29,15,0,28,28,16};
+  const size_t addNodes[] = {2,4,5,3,3,4,4,5,5,5,5}; // total 45 points
+  if((!run_onec) && (test_face_msg.face_fit_data[0] != 0) && (test_face_msg.face_fit_data[1] != 0))
   {
-    for (size_t i = index_start; i < index_end; ++i)
+    size_t index_start = shape.size(), index_end = index_start+addNodes[0];
+    for (int addtiems = 0; addtiems < 11; ++addtiems)
     {
-      // std::cout << index_pairs[2*addtiems]*2 << ' ' << index_pairs[2*addtiems+1]*2 << ' '
-      // << index_pairs[2*addtiems]*2+ 1 << ' ' << index_pairs[2*addtiems+1]*2 + 1<< std::endl;;
-      double x = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2] 
-      + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2] 
-      - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2])
-      /(addNodes[addtiems]+1)*(i - index_start + 1);
-      double y = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2+ 1] 
-      + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2 + 1] 
-      - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2 + 1])
-      / (addNodes[addtiems]+1)*(i - index_start + 1);
+      for (size_t i = index_start; i < index_end; ++i)
+      {
+        // std::cout << index_pairs[2*addtiems]*2 << ' ' << index_pairs[2*addtiems+1]*2 << ' '
+        // << index_pairs[2*addtiems]*2+ 1 << ' ' << index_pairs[2*addtiems+1]*2 + 1<< std::endl;;
+        double x = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2] 
+        + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2] 
+        - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2])
+        /(addNodes[addtiems]+1)*(i - index_start + 1);
+        double y = test_face_msg.face_fit_data[index_pairs[2*addtiems]*2+ 1] 
+        + (test_face_msg.face_fit_data[index_pairs[2*addtiems+1]*2 + 1] 
+        - test_face_msg.face_fit_data[index_pairs[2*addtiems]*2 + 1])
+        / (addNodes[addtiems]+1)*(i - index_start + 1);
 
-      test_face_msg.face_fit_data[2*i] = x;
-      test_face_msg.face_fit_data[2*i+1] = y;
-    }
+        test_face_msg.face_fit_data[2*i] = x;
+        test_face_msg.face_fit_data[2*i+1] = y;
+      }
     if(addtiems <= 10)
       {
         index_start = index_start+addNodes[addtiems];
         index_end = index_end+addNodes[addtiems+1];
       }
+    }
+    run_onec = 1;
   }
+  
+  if(run_onec && (test_face_msg.face_fit_data[0] < 500) && (pre_frame_data[0] > 0) )
+  {
+     //std::cout << " rbfing..." << std::endl;
+    //using pre_frame_data to predict current frame the additional points' X-position
+    for (size_t i = 0,j = 0; i < face_nodes_cnt*2; i=i+2,++j)
+    {
+
+      X[j] = pre_frame_data[i];
+      Y.put(j,0,test_face_msg.face_fit_data[i] - pre_frame_data[i]);
+      //std::cout << j << ' ' << X[j] << ' ' <<test_face_msg.face_fit_data[i] - pre_frame_data[i]<<std::endl;
+    }
+    Train_RBF();
+    for(size_t i = face_nodes_cnt*2; i< 222; i=i+2){
+      double temp = getOutput(pre_frame_data[i]);
+      test_face_msg.face_fit_data[i] = pre_frame_data[i] + temp;
+      //std::cout << " X: " << temp << " " << test_face_msg.face_fit_data[i] << std::endl; 
+    }
+    //using pre_frame_data to predict current frame the additional points' Y-position
+    for (size_t i = 1 ,j = 0; i < face_nodes_cnt*2; i=i+2,++j)
+    {
+      X[j] = pre_frame_data[i];
+      Y.put(j,0,test_face_msg.face_fit_data[i] - pre_frame_data[i]);   
+    }
+    Train_RBF();
+    for(size_t i = face_nodes_cnt*2+1; i< 222; i=i+2){
+      double temp = getOutput(pre_frame_data[i]);
+      test_face_msg.face_fit_data[i] = pre_frame_data[i] +temp ;
+      //std::cout << " Y: " << temp << " " << test_face_msg.face_fit_data[i] << std::endl; 
+    }
+
+  }
+  //train RBF
+
+  //Use RBF to predict other points
+     
+  //copy face-fit-data to pre_frame_data
+  //std::cout << "copying data " <<std::endl;
+  for (size_t i = 0; i < 222; ++i)
+  {
+    pre_frame_data[i] = test_face_msg.face_fit_data[i];
+  }
+/*  for (int i = 0; i < 222; ++i)
+  {
+    std::cout <<i <<' '<< pre_frame_data[i]  << std::endl;
+  }*/
 
 // for(size_t i = 0 ; i < 222; i = i+2){
 //   std::cout << i<<':'<<' ' <<test_face_msg.face_fit_data[i] <<' '<< test_face_msg.face_fit_data[i+1]<< std::endl;

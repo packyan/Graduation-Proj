@@ -4,7 +4,7 @@
 
 ---
 ## Face-fit
-It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face and find the face feature points through a webcam, as the same time pack the face feature points data and transmit them to a Unity3D server.
+It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face and find the face feature points through a webcam, as the same time pack the face feature points data and transmit them to a Unity3D server.Use RBF(Radial Basis Function) Interpolation to drive those additional points more smoothly.
 
 ## Unity3D C\#
 ### Socket
@@ -15,6 +15,7 @@ It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face 
 ### Logs:
 1. 2018.04.09 First test finished. Just simpely receive data from client, and drive some spheres.
 2. 2018.04.21 `face-fit` use linear interp to add additional face point, it's purely to increase the number of points. So the facial animation looks very hard. Optimize the server to receive separated data packets.
+3. 2018.04.23 `face-fit` now use  RBF(Radial Basis Function) Interpolation to drive those additional points more smoothly. But it's still a 2D facial animation, considering add static Z-axis coordinate to build a 3D face model.
 
 
 ## 1. 目录
