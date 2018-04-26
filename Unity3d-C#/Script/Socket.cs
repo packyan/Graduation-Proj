@@ -128,15 +128,18 @@ public class Socket : MonoBehaviour
                             //Debug.Log("check success");
                             face_fit.face_data_recv = Bytes2Struct<face_fit_msg>(each_struct);
                         }
-
+                        face_fit.face_data_recv.face_fit_data[170] = 66;
                         //check each head and end
                         //if check successfully, then do next operation.
                         //Debug.Log("package_size: " + package_size);
                         //Debug.Log("package head : " + BitConverter.ToString(face_fit.face_data_recv.packages_head));
-                        //Debug.Log("face-fit data: " + face_fit.face_data_recv.face_fit_data[0] + ' '
-                        //     + face_fit.face_data_recv.face_fit_data[1] + ' '
-                        //     + face_fit.face_data_recv.face_fit_data[data_size - 2] + ' '
-                        //     + face_fit.face_data_recv.face_fit_data[data_size - 1] + ' ');
+                        //Debug.Log("face-fit data: " + face_fit.face_data_recv.face_fit_data[132] + ' '
+                        //    + face_fit.face_data_recv.face_fit_data[133] + ' '
+                        //    + face_fit.face_data_recv.face_fit_data[134] + ' '
+                        //  );
+                        ////+face_fit.face_data_recv.face_fit_data[132] + ' '
+                        ////    + face_fit.face_data_recv.face_fit_data[133] + ' '
+                        ////    + face_fit.face_data_recv.face_fit_data[134]
                         //Debug.Log("package end : " + BitConverter.ToString(face_fit.face_data_recv.package_end));
                         buffer = new byte[bufferSize*2];
                     }
