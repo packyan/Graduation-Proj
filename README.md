@@ -1,16 +1,20 @@
-# Graduation Proj
+# Data-Drive Facial Animation
 
 标签（空格分隔）： 毕业设计
 
 ---
 ## Face-fit
-It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face and find the face feature points through a webcam, as the same time pack the face feature points data and transmit them to a Unity3D server.Use RBF(Radial Basis Function) Interpolation to drive those additional points more smoothly.
+It's based on [CSIRO-FaceAnalysis-SDK](http://face.ci2cv.net/) to tracking face and find the face feature points through a webcam, as the same time pack the face feature points data and transmit them to a Unity3D server.Use RBF(Radial Basis Function) Interpolation to drive those additional points more smoothly. Transmit RBF witghts and other parameters to server, decrease the data packat size.
 
 ## Unity3D C\#
-### Socket
-#### Usage:
+### Usage:
 1. `socket.cs` is used to communicata with the client, and receive Face-fit data form a linux client.
-2. `Initializeface` is used to initialize face nodes in Unity3D and drive these nodes to make face animation.
+2. `example.cs` drag it to the skin model, and it drives the model move.
+3. `ohter_models.cs` other models on face, follow the movement of the skin model.
+3. `Initializeface.cs` is used to initialize face nodes in Unity3D and drive these nodes to make face animation. Only use in test.
+
+## Other Floders
+Only use to prictice and test some features.
 
 ### Logs:
 1. 2018.04.09 First test finished. Just simpely receive data from client, and drive some spheres.
